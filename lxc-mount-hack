@@ -1,0 +1,25 @@
+#!/bin/bash
+
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <name> <base>"
+    exit 1
+fi
+
+manualtest="$1"
+LXC_DIR="/home/virt/.local/share/lxc/$1"
+LXC_BASE="$2"
+LXC_NAME="$1"
+
+
+
+# Use the provided manualtest value in the mount command
+# sudo mount -n -t overlay -oupperdir="/home/virt/.local/share/lxc/$manualtest/tmpfs/delta0" -lowerdir="/home/virt/.local/share/lxc/crunner0/rootfs" -workdir="/home/virt/.local/share/lxc/$manualtest/tmpfs/work0" none "/home/virt/.local/share/lxc/$manualtest/rootfs/"
+
+mount -n -t overlay -o upperdir=/home/virt/.local/share/lxc/$1/tmpfs/delta0,lowerdir=/home/virt/.local/share/lxc/crunner0/rootfs,workdir=/home/virt/.local/share/lxc/$1/tmpfs/work0 none /home/virt/.local/share/lxc/$1/rootfs/
+
+
+[ -e $LXC_DIR/configured ] && exit 0
+for file in $LXC_DIR/rootfs/etc/hostname \
+            $LXC_DIR/rootfs/etc/hosts; do
+        [ -f "$file" ] && sed -i -e "s/$LXC_BASE/$LXC_NAME/" $file
+done

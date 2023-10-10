@@ -1,0 +1,4 @@
+virt ALL=(ALL:ALL) NOPASSWD: /bin/mount -n -t tmpfs -o mode=0755 -o uid=1001 -o gid=1001 none /home/virt/.local/share/lxc/*
+virt ALL=(ALL:ALL) NOPASSWD: /usr/local/bin/lxc-mount-hack
+virt ALL=(ALL:ALL) NOPASSWD: /usr/local/bin/lxc-hack-chown
+virt ALL=(ALL:ALL) NOPASSWD: /usr/local/bin/lxc-hack-destroy

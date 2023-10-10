@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+
+import subprocess
+import random
+import sys
+import os
+
+
+config = '''
+lxc.include = /usr/share/lxc/config/ubuntu.common.conf
+lxc.include = /usr/share/lxc/config/ubuntu.userns.conf
+lxc.arch = x86_64
+# Container specific configuration
+lxc.idmap = u 0 165536 65536
+lxc.idmap = g 0 165536 65536
+lxc.rootfs.path = dir:/home/virt/.local/share/lxc/{base}/rootfs
+lxc.uts.name = {base}
+# Network configuration
+lxc.net.0.type = veth
+lxc.net.0.link = lxcbr0
+lxc.uts.name = {name}
+lxc.rootfs.path = dir:/home/virt/.local/share/lxc/{name}/rootfs
+lxc.ephemeral = 1
+
+'''
+
+pre_mount = '''#!/bin/bash
+
+LXC_DIR="/home/virt/.local/share/lxc/{name}"
+LXC_BASE="{base}"
+LXC_NAME="{name}"
+mkdir -p /home/virt/.local/share/lxc/{name}/tmpfs
+sudo mount -n -t tmpfs -o mode=0755 -o uid=1001 -o gid=1001 none /home/virt/.local/share/lxc/{name}/tmpfs
+mkdir -p /home/virt/.local/share/lxc/{name}/tmpfs/delta0 /home/virt/.local/share/lxc/{name}/rootfs/
+mkdir -p /home/virt/.local/share/lxc/{name}/tmpfs/work0
+getfacl -a ../{base}/rootfs | setfacl --set-file=- /home/virt/.local/share/lxc/{name}/tmpfs/delta0 || true
+getfacl -a ../{base}/rootfs | setfacl --set-file=- /home/virt/.local/share/lxc/{name}/rootfs/ || true
+sudo /usr/local/bin/lxc-mount-hack "{name}" "{base}"
+
+'''
+
+if len(sys.argv) != 3:
+    print("Usage: python3 script.py <base> <name>")
+    sys.exit(1)
+
+base = sys.argv[1]
+name = sys.argv[2]
+
+
+
+
+# Specify the directory path you want to create
+directory_path = "/home/virt/.local/share/lxc/{name}".format(name=name)
+
+# Use the os.makedirs() function to create the directory and its parent directories if they don't exist
+try:
+    os.makedirs(directory_path)
+    print(f"Directory '{directory_path}' created successfully.")
+except OSError as e:
+    print(f"Error creating directory '{directory_path}': {e}")
+
+try:
+    os.makedirs("{}/rootfs".format(directory_path))
+    print(f"Directory 'rootfs' created successfully.")
+except OSError as e:
+    print(f"Error creating directory rootfs: {e}")
+
+
+with open("{}/config".format(directory_path), "w") as file:
+    file.write(config.format(name=name, base=base))
+
+with open("{}/pre-mount".format(directory_path), "w") as file:
+    file.write(pre_mount.format(name=name, base=base))
+
+os.chmod("{}/pre-mount".format(directory_path), 0o755)
+
+
+
+try:
+    completed_process = subprocess.run('bash pre-mount', shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=directory_path)
+    # Print the command's standard output and standard error
+    print("pre Command Output:")
+    print(completed_process.stdout)
+    print("pre Command Error:")
+    print(completed_process.stderr)
+except subprocess.CalledProcessError as e:
+    print(f"Error running the command: {e}")
+
+# Define the Bash command you want to run
+bash_command = "~/.local/bin/lxc-start -n {}".format(name)
+
+# Run the Bash command
+try:
+    completed_process = subprocess.run(bash_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # Print the command's standard output and standard error
+    print("Command Output:")
+    print(completed_process.stdout)
+    
+    print("Command Error:")
+    print(completed_process.stderr)
+except subprocess.CalledProcessError as e:
+    print(f"Error running the command: {e}")

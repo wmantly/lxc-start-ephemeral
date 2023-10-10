@@ -1,0 +1,6 @@
+#!/bin/sh
+
+/usr/bin/umount -l /home/virt/.local/share/lxc/$1/tmpfs
+/usr/bin/umount -l /home/virt/.local/share/lxc/$1/rootfs
+sleep 1;
+rm -rf /home/virt/.local/share/lxc/$1

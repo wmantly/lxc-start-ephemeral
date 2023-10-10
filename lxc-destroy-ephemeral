@@ -1,0 +1,5 @@
+#!/bin/bash
+
+lxc-destroy -f $1
+sleep 1;
+sudo /usr/local/bin/lxc-hack-destroy $1

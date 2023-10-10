@@ -1,0 +1,3 @@
+#!/bin/bash
+
+chown virt:virt "/home/virt/.local/share/lxc/$1/$2/"
